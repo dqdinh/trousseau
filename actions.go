@@ -1,12 +1,14 @@
 package trousseau
 
 import (
+	"bytes"
 	"time"
 
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"strings"
 
@@ -52,43 +54,37 @@ func CreateAction(ct CryptoType, ca CryptoAlgorithm, recipients []string) error 
 	return nil
 }
 
-func PushAction(destination string, sshPrivateKey string, askPassword bool) error {
-	endpointDsn, err := dsn.Parse(destination)
+func PushAction() error {
+	type User struct {
+		Name string `json:"username"`
+		Id   string `json:"id"`
+	}
+
+	type File struct {
+		Id      string    `json:"id"`
+		Owner   User      `json:"owner"`
+		Content Trousseau `json:"content"`
+	}
+
+	tr, err := OpenTrousseau("/Users/oleiade/.trousseau")
 	if err != nil {
 		return err
 	}
 
-	switch endpointDsn.Scheme {
-	case "s3":
-		err := endpointDsn.SetDefaults(S3Defaults)
-		if err != nil {
-			return err
-		}
+	f := File{
+		Id:      "123456",
+		Owner:   User{Name: "theo", Id: "theo"},
+		Content: *tr,
+	}
 
-		err = UploadUsingS3(endpointDsn)
-		if err != nil {
-			return err
-		}
-	case "scp":
-		err := endpointDsn.SetDefaults(ScpDefaults)
-		if err != nil {
-			return err
-		}
+	data, err := json.Marshal(f)
+	if err != nil {
+		return err
+	}
 
-		if askPassword == true {
-			password := PromptForHiddenInput("Ssh endpoint password: ")
-			endpointDsn.Secret = password
-		}
-
-		err = UploadUsingScp(endpointDsn, sshPrivateKey)
-		if err != nil {
-			return err
-		}
-	case "gist":
-		err = UploadUsingGist(endpointDsn)
-		if err != nil {
-			return err
-		}
+	_, err = http.Post("http://localhost:8080/stores", "application/json", bytes.NewBuffer(data))
+	if err != nil {
+		return err
 	}
 
 	return nil

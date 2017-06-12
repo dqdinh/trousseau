@@ -67,35 +67,16 @@ func CreateCommand() cli.Command {
 
 func PushCommand() cli.Command {
 	return cli.Command{
-		Name:  "push",
-		Usage: "Push the encrypted data store to a remote storage",
-		Description: "The local encrypted data store will be pushed to a remote destination " +
-			"described by a data source name.\n\n" +
-			"   Trousseau data source name goes as follow:\n\n" +
-			"     {protocol}://{identifier}:{secret}@{host}:{port}/{path}\n\n" +
-			"   Given:\n" +
-			"     * protocol: The remote service target type. Can be one of: s3 or scp\n" +
-			"     * identifier: The login/key/whatever to authenticate trousseau to the remote service. Provide your aws_access_key if you're targeting s3, or your remote login if you're targeting scp\n" +
-			"     * secret: The secret to authenticate trousseau to the remote service. Provide your aws_secret_key if you're targeting s3, or your remote password if you're targeting scp\n" +
-			"     * host: Your bucket name is you're targeting s3. The host to login to using scp otherwise\n" +
-			"     * port: The aws_region if you're targeting s3. The port to login to using scp otherwise\n" +
-			"     * path: The remote path to push to or retrieve from the trousseau file on a push or pull action\n\n" +
-			"   Examples:\n\n" +
-			"     s3://1298u1928eu9182dj19d2:1928u192ijdnh1b2d8@my-super-bucket:eu-west-1/topsecret-trousseau.tr\n" +
-			"     scp://myuser:@myhost.io:6453/topsecret-trousseau.tr  (use the password option to supply password)\n" +
-			"     gist://oleiade:1928u3019j2d9812dn0192u490128dj@:/topsecret-trousseau.tr\n",
+		Name:        "push",
+		Usage:       "Push the encrypted data store to a remote storage",
+		Description: "Push your data store to a trousseau-server",
 		Action: func(c *cli.Context) error {
-			if !hasExpectedArgs(c.Args(), 1) {
-				trousseau.ErrorLogger.Fatal("Invalid number of arguments provided to push command")
-			}
-
-			var destination string = c.Args().First()
-			err := trousseau.PushAction(destination, c.String("ssh-private-key"), c.Bool("ask-password"))
+			err := trousseau.PushAction()
 			if err != nil {
 				trousseau.ErrorLogger.Fatal(err)
 			}
 
-			trousseau.InfoLogger.Printf("Encrypted data store succesfully pushed to %s remote storage\n", destination)
+			trousseau.InfoLogger.Printf("Encrypted data store succesfully pushed to remote storage\n")
 
 			return nil
 		},
@@ -103,15 +84,6 @@ func PushCommand() cli.Command {
 			cli.BoolFlag{
 				Name:  "overwrite",
 				Usage: "Overwrite any existing remote resource with pushed data",
-			},
-			cli.BoolFlag{
-				Name:  "password",
-				Usage: "Prompt for remote host ssh password",
-			},
-			cli.StringFlag{
-				Name:  "ssh-private-key",
-				Value: filepath.Join(os.Getenv("HOME"), ".ssh/id_rsa"),
-				Usage: "Path to the ssh private key to be used when pushing to remote storage via ssh",
 			},
 		},
 	}
